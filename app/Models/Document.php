@@ -9,7 +9,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Document extends Model
 {
-    use InteractsWithMedia,SoftDeletes;
+    use InteractsWithMedia;
 
     protected $guarded = [];
 
