@@ -2,63 +2,81 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreDocumentRequest;
+use App\Http\Requests\UpdateDocumentRequest;
+use App\Models\Department;
+use App\Models\Document;
+use App\Models\User;
+use Exception;
 
 class DocumentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $documents = Document::with('department', 'sender', 'receiver')->paginate(10);
+
+        return view('documents.index', compact('documents'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $departments = Department::all();
+        $users = User::all();
+
+        return view('documents.create', compact('departments', 'users'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreDocumentRequest $request)
     {
-        //
+
+        try {
+            $document = Document::create($request->validated());
+            $document->addMediaFromRequest('documents')->toMediaCollection('documents');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Something went wrong');
+        }
+
+        return redirect()->route('documents.index')->with('success', 'Document created successfully');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Document $document)
     {
-        //
+        $document = Document::findOrFail($document->id);
+
+        return view('documents.show', compact('document'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(Document $document)
     {
-        //
+        $departments = Department::all();
+        $users = User::all();
+
+        return view('documents.edit', compact('document', 'departments', 'users'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(UpdateDocumentRequest $request, Document $document)
     {
-        //
+        try {
+            $document->update($request->validated());
+            if ($request->hasFile('documents')) {
+                $document->clearMediaCollection('documents');
+                $document->addMediaFromRequest('documents')->toMediaCollection('documents');
+            }
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Something went wrong');
+        }
+
+        return redirect()->route('documents.index')->with('success', 'Document updated successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Document $document)
     {
-        //
+        try {
+            $document->delete();
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Something went wrong');
+        }
+
+        return redirect()->route('documents.index')->with('success', 'Document deleted successfully');
     }
 }
